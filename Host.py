@@ -1,6 +1,7 @@
 import socket
 import time
 import threading
+import Packet
 from _thread import *
 
 client_sockets = []
@@ -14,8 +15,6 @@ print(f"Host ip >> {Host}")
 
 def handle_client(client_socket, addr):
     print(f"클라이언트 연결됨: {addr}")
-    client_sockets.append(client_socket)  # 클라이언트 소켓 추가
-
     try:
         while True:
             # 클라이언트의 메시지를 수신
@@ -52,17 +51,18 @@ server_socket.listen(3)
 try:
     while True:
         client_socket, addr = server_socket.accept()
+        client_sockets.append(client_socket)  # 클라이언트 소켓 추가
         # 클라이언트를 별도의 스레드에서 처리
         client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
         client_thread.start()
 
 
-        if(len(client_sockets) == 3):
+        if(len(client_sockets) == 1):
             # 20ms 마다 모든 클라이언트에게 데이터 전송 요청
             while True:
                 message = "SEND_DATA".encode('utf-8')
                 for client in client_sockets:
-                    client.sendall(message)
+                    client.sendall(Packet.test_request())
                 print("서버가 모든 클라이언트에게 데이터 전송 요청을 보냈습니다.")
                 time.sleep(0.02)  # 20ms 대기
         else:
