@@ -1,7 +1,9 @@
 import socket
+import time
+import threading
 from _thread import *
 
-sensor_sockets = []
+client_sockets = []
 
 Host = socket.gethostbyname(socket.gethostname())
 Port = 9999
@@ -10,36 +12,23 @@ print(f"Host ip >> {Host}")
 
 #### 스레드에서 실행될 함수 정의
 
-def threaded(sensor_socket, addr):
-    print('>> Connected by :', addr[0], ':', addr[1])
+def handle_client(client_socket, addr):
+    print(f"클라이언트 연결됨: {addr}")
+    client_sockets.append(client_socket)  # 클라이언트 소켓 추가
 
-    ## process until client disconnect ##
-    while True:
-        try:
-            ## send client if data recieved(echo) ##
-            data = sensor_socket.recv(1024)
-
-            if not data:
-                print('>> Disconnected by ' + addr[0], ':', addr[1])
+    try:
+        while True:
+            # 클라이언트의 메시지를 수신
+            response = client_socket.recv(1024).decode('utf-8')
+            if not response:
                 break
-
-            print('>> Received from ' + addr[0], ':', addr[1], data.decode())
-
-            ## chat to client connecting client ##
-            ## chat to client connecting client except person sending message ##
-            for client in sensor_sockets:
-                if client != sensor_socket:
-                    client.send(data)
-
-        except ConnectionResetError as e:
-            print('>> Disconnected by ' + addr[0], ':', addr[1])
-            break
-
-    if sensor_socket in sensor_sockets:
-        sensor_sockets.remove(sensor_socket)
-        print('remove client list : ', len(sensor_sockets))
-
-    sensor_socket.close()
+            print(f"서버가 클라이언트로부터 데이터 수신: {response}")
+    except Exception as e:
+        print(f"클라이언트 연결 오류: {e}")
+    finally:
+        client_socket.close()  # 클라이언트 소켓 종료
+        client_sockets.remove(client_socket)  # 클라이언트 소켓 리스트에서 제거
+        print(f"클라이언트 연결 종료: {addr}")
 
 
 #### server소켓 설정 및 생성
@@ -55,21 +44,31 @@ server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 # 센서에서 연결을 시도할 때 지정할 Host와 Port
 server_socket.bind((Host, Port))
 
-server_socket.listen()
+# 최대 3개까지 연결 가능
+server_socket.listen(3)
 
 
 #### sensor소켓과 server소켓 연결
 try:
     while True:
-        print('>> Wait')
+        client_socket, addr = server_socket.accept()
+        # 클라이언트를 별도의 스레드에서 처리
+        client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
+        client_thread.start()
 
-        server_socket, addr = server_socket.accept()
-        sensor_sockets.append(server_socket)
-        start_new_thread(threaded, (server_socket, addr))
-        print("참가자 수 : ", len(sensor_sockets))
-except Exception as e:
-    print('에러 : ', e)
 
+        if(len(client_sockets) == 3):
+            # 20ms 마다 모든 클라이언트에게 데이터 전송 요청
+            while True:
+                message = "SEND_DATA".encode('utf-8')
+                for client in client_sockets:
+                    client.sendall(message)
+                print("서버가 모든 클라이언트에게 데이터 전송 요청을 보냈습니다.")
+                time.sleep(0.02)  # 20ms 대기
+        else:
+            continue
+except KeyboardInterrupt:
+    print("서버 종료")
 finally:
     server_socket.close()
 
