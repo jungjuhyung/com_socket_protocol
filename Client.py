@@ -28,7 +28,7 @@ try:
                 print("아이디 확인 cmd")
                 client_socket.sendall(packet.response_id(target,client_id))
                 print(f"클라이언트가 서버에게 데이터 송신: {packet.response_id(target,client_id)}")
-            elif cmd == 1:
+            elif cmd == 0:
                 print("확인")
             else:
                 print(f"알 수 없는 명령: {data}")
