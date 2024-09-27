@@ -9,7 +9,7 @@ client_threads = {}
 
 Host = socket.gethostbyname(socket.gethostname())
 Port = 9999
-host_id = 0x00000001
+host_id = 1
 
 print(f"Host ip >> {Host}")
 
@@ -29,7 +29,6 @@ def handle_client(client_socket, addr):
         client_socket.close()  # 클라이언트 소켓 종료
         client_sockets.remove(client_socket)  # 클라이언트 소켓 리스트에서 제거
         print(f"클라이언트 연결 종료: {addr}")
-
 
 #### server소켓 설정 및 생성
 
@@ -64,9 +63,10 @@ server_socket.listen(3)
 try:
     while True:
         client_socket, addr = server_socket.accept()
-
+        print(packet.request_id(0x00000000,host_id))
         client_socket.sendall(packet.request_id(0x00000000,host_id))
         data = client_socket.recv(512)
+        print(data)
         print(f"처음 확인 {packet.response_check(data)}")
         if packet.response_check(data):
             target, req_device, cmd = packet.cmd_parser(data)
@@ -84,7 +84,7 @@ try:
         if(True):
             # 20ms 마다 모든 클라이언트에게 데이터 전송 요청
             while True:
-                for client_id, client_socket in client_sockets:
+                for client_id, client_socket in client_sockets.items():
                     client_socket.sendall(packet.request_data(client_id, host_id))
                 print("서버가 모든 클라이언트에게 데이터 전송 요청을 보냈습니다.")
                 time.sleep(0.02)  # 20ms 대기

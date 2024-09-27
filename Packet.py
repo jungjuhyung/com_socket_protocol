@@ -25,14 +25,14 @@ SOH = 0x01 # 1byte
 EOH = 0x04 # 1byte
 
 # 커맨드(CMD) => <H(2byte 부호 없는 정수) 리틀 엔디안으로 패킹, 값울 주소의 뒤에부터 채우기
-data_req = 0x00 # 2byte
-date_res = 0x01 # 2byte
-status_req = 0x03 # 2byte
-status_res = 0x04 # 2byte
-keep_alive_req = 0x05 # 2byte
-kee_alive_res = 0x06 # 2byte
-id_req = 0x07 # 2byte
-id_res = 0x08 # 2byte
+data_req = 1 # 2byte
+date_res = 2 # 2byte
+status_req = 3 # 2byte
+status_res = 4 # 2byte
+keep_alive_req = 5 # 2byte
+kee_alive_res = 6 # 2byte
+id_req = 7 # 2byte
+id_res = 8 # 2byte
 
 # device id => Q(8byte 부호없는 정수)로 패킹
 """
@@ -46,19 +46,23 @@ sensor3_id = 0x00000004 # 8byte
 red = 0x02
 
 def cmd_parser(data):
+    print(f"정제 전 : {data}")
+    print(len(data))
     data = data[1:-1]
-    target, req_device, cmd = struct.unpack("Q", data[0:8])[0],struct.unpack("Q", data[8:16])[0],struct.unpack("H", data[16:18])[0]
+    print(f"정제 후 : {data}")
+    print(len(data))
+    target, req_device, cmd = struct.unpack("QQH", data)
     return target, req_device, cmd
 
 def request_check(data):
-    return data[0] == 0x01 and data[-1] == 0x04
+    return data[0] == 0x02 and data[-1] == 0x03
 
 def response_check(data):
-    return data[0] == 0x02 and data[-1] == 0x03
+    return data[0] == 0x01 and data[-1] == 0x04
 
 def request_id(target_device,request_device):
     packet = struct.pack(
-    'B Q Q H B',
+    '=BQQHB',
         STX,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
@@ -69,7 +73,7 @@ def request_id(target_device,request_device):
 
 def response_id(target_device,request_device):
     packet = struct.pack(
-    'B Q Q H Q',
+    '=BQQHB',
         SOH,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
@@ -80,7 +84,7 @@ def response_id(target_device,request_device):
 
 def request_data(target_device,request_device):
     packet = struct.pack(
-        'B Q Q H B',
+        '=BQQHB',
         STX,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
@@ -92,7 +96,7 @@ def request_data(target_device,request_device):
 
 def response_data(req_idx:int, res_idx:int, target_device,request_device, inf):
     packet = struct.pack(
-        'B Q Q f64 B',
+        '=BQQf64B',
         SOH,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
