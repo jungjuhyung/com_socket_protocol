@@ -6,6 +6,7 @@ from _thread import *
 
 HOST = '192.168.0.11' ## server에 출력되는 ip를 입력해주세요 ##
 PORT = 9999
+client_id = 2
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
@@ -13,7 +14,8 @@ client_socket.connect((HOST, PORT))
 try:
     while True:
         # 서버로부터 명령 수신
-        command = client_socket.recv(1024).decode('utf-8')
+        command = client_socket.recv(512)
+        print(command)
         if command == "SEND_DATA":
             # 명령을 받으면 데이터 송신
             data_to_send = f"Sensor Data at {time.time()}"

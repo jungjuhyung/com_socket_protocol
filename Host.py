@@ -8,11 +8,11 @@ client_sockets = []
 
 Host = socket.gethostbyname(socket.gethostname())
 Port = 9999
+host_id = 0x00000001
 
 print(f"Host ip >> {Host}")
 
 #### 스레드에서 실행될 함수 정의
-
 def handle_client(client_socket, addr):
     print(f"클라이언트 연결됨: {addr}")
     try:
@@ -56,6 +56,7 @@ try:
         client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
         client_thread.start()
 
+        client_socket.sendall(Packet.id_request(0x00000000,host_id,))
 
         if(len(client_sockets) == 1):
             # 20ms 마다 모든 클라이언트에게 데이터 전송 요청

@@ -31,18 +31,43 @@ status_req = 0x03 # 2byte
 status_res = 0x04 # 2byte
 keep_alive_req = 0x05 # 2byte
 kee_alive_res = 0x06 # 2byte
+id_req = 0x07 # 2byte
+id_res = 0x08 # 2byte
 
-# device id => Q(8byte 부호없는 정수)로 패킹 
+# device id => Q(8byte 부호없는 정수)로 패킹
+"""
 host_id = 0x00000001 # 8byte
 sensor1_id = 0x00000002 # 8byte
 sensor2_id = 0x00000003 # 8byte
 sensor3_id = 0x00000004 # 8byte
+"""
 
 # status_signal => B로 패킹
-green = 0x01 
 red = 0x02
 
-def test_request(req_idx:int, target_device,request_device):
+def id_request(target_device,request_device):
+    packet = struct.pack(
+    'B Q Q H B',
+        STX,  # STX
+        target_device,  # 타겟 장치
+        request_device,  # 요청 장치
+        id_req, # 요청 명령
+        ETX  # ETX
+    )
+    return packet
+
+def id_response(target_device,request_device, client_id):
+    packet = struct.pack(
+    'B Q Q H Q',
+        STX,  # STX
+        target_device,  # 타겟 장치
+        request_device,  # 요청 장치
+        client_id, # 서버 id
+        ETX  # ETX
+    )
+    return packet
+
+def data_request(req_idx:int, target_device,request_device):
     packet = struct.pack(
         'B Q Q H B',
         STX,  # STX
@@ -53,7 +78,7 @@ def test_request(req_idx:int, target_device,request_device):
 
     return packet
 
-def test_response(req_idx:int, res_idx:int, target_device,request_device, inf):
+def data_response(req_idx:int, res_idx:int, target_device,request_device, inf):
     packet = struct.pack(
         'B Q Q f64 B',
         SOH,  # STX
