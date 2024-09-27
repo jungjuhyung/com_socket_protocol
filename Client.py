@@ -10,7 +10,9 @@ HOST = '192.168.0.11' ## server에 출력되는 ip를 입력해주세요 ##
 PORT = 9999
 client_id = 0x00000002
 
+
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
 client_socket.connect((HOST, PORT))
 
 try:

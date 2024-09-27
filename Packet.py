@@ -46,7 +46,7 @@ sensor3_id = 0x00000004 # 8byte
 red = 0x02
 
 def cmd_parser(data):
-    data = data[1:19]
+    data = data[1:-1]
     target, req_device, cmd = struct.unpack("Q", data[0:8])[0],struct.unpack("Q", data[8:16])[0],struct.unpack("H", data[16:18])[0]
     return target, req_device, cmd
 

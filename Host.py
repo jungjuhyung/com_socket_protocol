@@ -67,6 +67,7 @@ try:
 
         client_socket.sendall(packet.request_id(0x00000000,host_id))
         data = client_socket.recv(512)
+        print(f"처음 확인 {packet.response_check(data)}")
         if packet.response_check(data):
             target, req_device, cmd = packet.cmd_parser(data)
             print(f"target : {target}")
