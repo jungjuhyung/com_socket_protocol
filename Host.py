@@ -4,7 +4,7 @@ import threading
 import Packet
 from _thread import *
 
-client_sockets = []
+client_sockets = {}
 
 Host = socket.gethostbyname(socket.gethostname())
 Port = 9999
@@ -51,14 +51,16 @@ server_socket.listen(3)
 try:
     while True:
         client_socket, addr = server_socket.accept()
-        client_sockets.append(client_socket)  # 클라이언트 소켓 추가
         # 클라이언트를 별도의 스레드에서 처리
         client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
         client_thread.start()
 
-        client_socket.sendall(Packet.id_request(0x00000000,host_id,))
+        client_socket.sendall(Packet.id_request(0x00000000,host_id))
+        client_socket.recv(512)
 
-        if(len(client_sockets) == 1):
+        # client_sockets.append(client_socket)  # 클라이언트 소켓 추가
+
+        if(True):
             # 20ms 마다 모든 클라이언트에게 데이터 전송 요청
             while True:
                 message = "SEND_DATA".encode('utf-8')

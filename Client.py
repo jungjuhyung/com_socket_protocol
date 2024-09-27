@@ -2,6 +2,7 @@
 
 import socket
 import time
+import struct
 from _thread import *
 
 HOST = '192.168.0.11' ## server에 출력되는 ip를 입력해주세요 ##
@@ -14,15 +15,20 @@ client_socket.connect((HOST, PORT))
 try:
     while True:
         # 서버로부터 명령 수신
-        command = client_socket.recv(512)
-        print(command)
-        if command == "SEND_DATA":
-            # 명령을 받으면 데이터 송신
-            data_to_send = f"Sensor Data at {time.time()}"
-            client_socket.sendall(data_to_send.encode('utf-8'))
-            print(f"클라이언트가 서버에게 데이터 송신: {data_to_send}")
-        else:
-            print(f"알 수 없는 명령: {command}")
+        data = client_socket.recv(512)
+        print(data[0])
+        print(data[-1])
+        print(data[18:20])
+        if(data[0] == 0x01 and data[-1] == 0x03):
+            command = struct.unpack("H", data[18:20])
+            print(command)
+            if command ==7:
+                # 명령을 받으면 데이터 송신
+                data_to_send = f"Sensor Data at {time.time()}"
+                client_socket.sendall(data_to_send.encode('utf-8'))
+                print(f"클라이언트가 서버에게 데이터 송신: {data_to_send}")
+            else:
+                print(f"알 수 없는 명령: {command}")
 except KeyboardInterrupt:
     print("클라이언트 종료")
 
