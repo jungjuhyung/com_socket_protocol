@@ -45,7 +45,18 @@ sensor3_id = 0x00000004 # 8byte
 # status_signal => B로 패킹
 red = 0x02
 
-def id_request(target_device,request_device):
+def cmd_parser(data):
+    data = data[1:19]
+    target, req_device, cmd = struct.unpack("Q", data[0:8])[0],struct.unpack("Q", data[8:16])[0],struct.unpack("Q", data[16:17])[0]
+    return target, req_device, cmd
+
+def request_check(data):
+    return data[0] == 0x01 and data[-1] == 0x04
+
+def response_check(data):
+    return data[0] == 0x02 and data[-1] == 0x03
+
+def request_id(target_device,request_device):
     packet = struct.pack(
     'B Q Q H B',
         STX,  # STX
@@ -56,29 +67,30 @@ def id_request(target_device,request_device):
     )
     return packet
 
-def id_response(target_device,request_device, client_id):
+def response_id(target_device,request_device):
     packet = struct.pack(
     'B Q Q H Q',
-        STX,  # STX
+        SOH,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
-        client_id, # 서버 id
-        ETX  # ETX
+        id_res, # 서버 id
+        EOH  # ETX
     )
     return packet
 
-def data_request(req_idx:int, target_device,request_device):
+def request_data(target_device,request_device):
     packet = struct.pack(
         'B Q Q H B',
         STX,  # STX
         target_device,  # 타겟 장치
         request_device,  # 요청 장치
+        data_req,
         ETX  # ETX
     )
 
     return packet
 
-def data_response(req_idx:int, res_idx:int, target_device,request_device, inf):
+def response_data(req_idx:int, res_idx:int, target_device,request_device, inf):
     packet = struct.pack(
         'B Q Q f64 B',
         SOH,  # STX
