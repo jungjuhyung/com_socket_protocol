@@ -2,10 +2,12 @@ import socket
 import time
 import threading
 import Packet as packet
+import queue
 from _thread import *
 
 client_sockets = {}
 client_threads = {}
+data_queue = queue.Queue()
 
 Host = socket.gethostbyname(socket.gethostname())
 Port = 9999
@@ -63,25 +65,19 @@ server_socket.listen(3)
 try:
     while True:
         client_socket, addr = server_socket.accept()
-        print(packet.request_id(0x00000000,host_id))
         client_socket.sendall(packet.request_id(0x00000000,host_id))
         data = client_socket.recv(512)
-        print(data)
-        print(f"처음 확인 {packet.response_check(data)}")
         if packet.response_check(data):
             target, req_device, cmd = packet.cmd_parser(data)
-            print(f"target : {target}")
-            print(f"req_device : {req_device}")
-            print(f"cmd : {cmd}")
             client_sockets[req_device] = client_socket
 
             # 클라이언트를 별도의 스레드에서 처리
             client_thread = threading.Thread(target=handle_client, args=(client_socket, addr))
             client_threads[req_device] = client_thread
             client_thread.start()
-            print(f"클라이언트 스레드 리스트 : {client_threads}")
             print(f"클라이언트 소켓 리스트 : {client_sockets}")
-        if(True):
+            print(f"클라이언트 스레드 리스트 : {client_threads}")
+        if len(client_sockets)==3:
             # 20ms 마다 모든 클라이언트에게 데이터 전송 요청
             while True:
                 for client_id, client_socket in client_sockets.items():
