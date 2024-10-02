@@ -29,10 +29,8 @@ data_req = 1 # 2byte
 date_res = 2 # 2byte
 status_req = 3 # 2byte
 status_res = 4 # 2byte
-keep_alive_req = 5 # 2byte
-kee_alive_res = 6 # 2byte
-id_req = 7 # 2byte
-id_res = 8 # 2byte
+id_req = 5 # 2byte
+id_res = 6 # 2byte
 
 # device id => Q(8byte 부호없는 정수)로 패킹
 """
@@ -43,7 +41,8 @@ sensor3_id = 0x00000004 # 8byte
 """
 
 # status_signal => B로 패킹
-red = 0x02
+red = 1
+green = 2
 
 def cmd_parser(data):
     print(f"정제 전 : {data}")

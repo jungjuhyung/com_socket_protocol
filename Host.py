@@ -9,11 +9,12 @@ client_sockets = {}
 client_threads = {}
 data_queue = queue.Queue()
 
-Host = socket.gethostbyname(socket.gethostname())
-Port = 9999
+host = socket.gethostbyname(socket.gethostname())
+port = 9999
 host_id = 1
 
-print(f"Host ip >> {Host}")
+print(f"Host ip >> {host}")
+print(type(host))
 
 #### 스레드에서 실행될 함수 정의
 def handle_client(client_socket, addr):
@@ -56,7 +57,7 @@ server_socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 # 센서에서 연결을 시도할 때 지정할 Host와 Port
-server_socket.bind((Host, Port))
+server_socket.bind((host, port))
 
 # 연결 대기 및 최대 연결 대기 가능 갯수 설정
 server_socket.listen(3)
