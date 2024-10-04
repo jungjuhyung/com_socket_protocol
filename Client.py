@@ -4,7 +4,7 @@ import socket
 import time
 import struct
 from _thread import *
-import Packet as packet
+import Parser as packet
 
 HOST = '192.168.0.11' ## server에 출력되는 ip를 입력해주세요 ##
 PORT = 9999

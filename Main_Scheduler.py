@@ -1,20 +1,20 @@
 import socket
 import time
 import threading
-import Packet as packet
+import Parser as packet
 import queue
 from _thread import *
 
-client_sockets = {}
-client_threads = {}
-data_queue = queue.Queue()
+front_queue = queue.Queue()
+ceiling_queue = queue.Queue()
+side_queue : queue.Queue()
 
-host = socket.gethostbyname(socket.gethostname())
+host_ip = socket.gethostbyname(socket.gethostname())
 port = 9999
-host_id = 1
+host_id = "1"
 
-print(f"Host ip >> {host}")
-print(type(host))
+print(f"Host ip >> {host_ip}")
+print(type(host_ip))
 
 #### 스레드에서 실행될 함수 정의
 def handle_client(client_socket, addr):
