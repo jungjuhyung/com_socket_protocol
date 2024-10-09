@@ -46,19 +46,31 @@ green = 2
 class Parser :
 
     def data_encoding(self, targetID, requestID, cmd, data):
-        packet = struct.pack(
-            f'=B8s8sH{len(data)}sB',
-            STX,  # STX
-            targetID.encode('utf-8'),  # 타겟 장치
-            requestID.encode('utf-8'),  # 요청 장치
-            cmd,  # 요청 명령
-            data.encode('utf-8'),
-            ETX  # ETX
-        )
-        return packet
+        if data is None:
+            packet = struct.pack(
+                '=B8s8sHB',
+                SOH,  # STX
+                targetID.encode('utf-8'),  # 타겟 장치
+                requestID.encode('utf-8'),  # 요청 장치
+                cmd, # 요청 명령
+                EOH  # ETX
+            )
+            return packet
+        else:
+            print(f"인코딩 확인 : {data}")
+            packet = struct.pack(
+                f'=B8s8sH{len(data)}sB',
+                SOH,  # STX
+                targetID.encode('utf-8'),  # 타겟 장치
+                requestID.encode('utf-8'),  # 요청 장치
+                cmd,  # 요청 명령
+                data.encode('utf-8'),
+                EOH  # ETX
+            )
+            return packet
 
     def data_decoding(self, data):
-        if data[0] == SOH and data[-1] == EOH:
+        if data[0] == STX and data[-1] == ETX:
             d_data = DecodingData()
 
             targetID, requestID, commend = struct.unpack("8s8sH", data[1:19])
@@ -67,18 +79,12 @@ class Parser :
             d_data.commend = commend
 
             if d_data.commend == 1:
-                data = struct.unpack("8s", data[19:27])
-                d_data.data = data[0].decode("utf-8")
+                d_data.data = "데이터 커멘드"
             elif d_data.commend == 2:
-                data = struct.unpack("2s", data[19:21])
-                d_data.data = data[0].decode("utf-8")
+                d_data.data = "변경 완료 커멘드"
             elif d_data.commend == 9:
-                data = struct.unpack("2s", data[19:21])
-                d_data.data = data[0].decode("utf-8")
+                d_data.data = "KEEPALIVE 커멘드"
 
             return d_data
         else:
             return None
-
-    def interpolation_64(self, IR_ARR_8):
-        return None
