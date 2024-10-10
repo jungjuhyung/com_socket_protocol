@@ -1,8 +1,10 @@
-import Parser
-from DTO import InfoSensor
+import time
+
+import Parser2
+from DataClass import InfoSensor, SourceData, CodeData
 import socket
 import threading
-
+import numpy as np
 
 class Stream:
     def __init__(self, front_queue, side_queue, ceiling_queue):
@@ -10,15 +12,16 @@ class Stream:
         self.side_queue = side_queue
         self.ceiling_queue = ceiling_queue
         self.info_Sensor_List = []
-
+        self.send_time = 0.0
         self.server_ip = socket.gethostbyname(socket.gethostname())
         self.port = 9999
         self.serverID = "S0001001"
         self.frontID = "D000F001"
         self.ceilingID = "D000C001"
         self.sideID = "D000S001"
+        self.codeData = CodeData()
 
-        self.parser = Parser.Parser()
+        self.parser = Parser2.Parser()
 
         #### server소켓 설정 및 생성
         # IPv4 주소를 사용하는 TCP 소켓 생성
@@ -48,18 +51,18 @@ class Stream:
     def connect(self):
         try:
             client_socket, addr = self.server_socket.accept()
-            print(f"센서 클라이언트 연결 : {addr}")
-            keepalive = self.parser.data_encoding("KEEPLIVE", self.serverID, 9, "OK")
+            print(f"센서 클라이언트 연결 : {addr}\n")
+            keepalive = self.parser.data_encoding("KEEPLIVE", self.serverID, self.codeData.keepCmd, "OK")
             client_socket.sendall(keepalive)
             response = client_socket.recv(512)
-            print(f"서버 킵얼라이브 요청 확인 : {response}")
+            print(f"서버 킵얼라이브 요청 확인 : {response}\n")
 
             result = self.parser.data_decoding(response)
-            print(f"서버 킵얼라이브 요청 객체 : {result}")
+            print(f"서버 킵얼라이브 요청 객체 : {result}\n")
 
             if result.requestID == self.frontID:
                 # 클라이언트를 별도의 스레드에서 처리
-                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.front_queue))
+                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.front_queue, result.requestID))
 
                 info_sensor = InfoSensor()
                 info_sensor.socket = client_socket
@@ -67,12 +70,12 @@ class Stream:
                 info_sensor.clientID = result.requestID
                 info_sensor.client_ip = addr
                 info_sensor.statement = True
-                print(f"스레드 생성 및 저장 영역 : {info_sensor}")
+                print(f"스레드 생성 및 저장 영역 : {info_sensor}\n")
                 self.info_Sensor_List.append(info_sensor)
                 client_thread.start()
             elif result.requestID == self.sideID:
                 # 클라이언트를 별도의 스레드에서 처리
-                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.side_queue))
+                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.side_queue, result.requestID))
 
                 info_sensor = InfoSensor()
                 info_sensor.socket = client_socket
@@ -84,7 +87,7 @@ class Stream:
                 client_thread.start()
             elif result.requestID == self.ceilingID:
                 # 클라이언트를 별도의 스레드에서 처리
-                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.ceiling_queue))
+                client_thread = threading.Thread(target=self.__recv_sensor, args=(client_socket, addr, self.ceiling_queue, result.requestID))
 
                 info_sensor = InfoSensor()
                 info_sensor.socket = client_socket
@@ -98,8 +101,8 @@ class Stream:
             print(f"아이디 요청 connect함수 오류 : {e}")
 
     #### 스레드에서 실행될 함수 정의
-    def __recv_sensor(self, client_socket, addr, queue_list):
-        print(f"클라이언트 스레드 생성 완료: {addr}")
+    def __recv_sensor(self, client_socket, addr, queue_list, clientID):
+        print(f"클라이언트 스레드 생성 완료: {addr}\n")
         try:
             while True:
                 # 클라이언트의 메시지를 수신
@@ -109,9 +112,27 @@ class Stream:
                     print("클라이언트 스레드 응답 오류")
                     break
                 print(f"서버가 클라이언트로부터 데이터 수신 => {addr} : {response}\n")
-                if result.commend == 1:
-                    queue_list.put(result.data)
-                elif result.commend == 2:
+                if result.commend == self.codeData.dataCmd:
+                    sourceData = SourceData()
+                    res_idx, iR_ARR_8, distance_8, temperature, moisture, illuminance = result.data.split(",")
+                    recv_time = time.time()
+                    sourceData.res_idx = int(res_idx)
+                    sourceData.clientID = clientID
+                    sourceData.response_time  = recv_time - self.send_time
+                    iR_ARR_8 = np.array([float(iR_ARR_8[i:i + 2] + '.' + iR_ARR_8[i + 2]) for i in range(0, len(iR_ARR_8), 3)])
+                    sourceData.IR_ARR_8  = iR_ARR_8
+                    sourceData.IR_ARR_64 = self.parser.interpolation_64(iR_ARR_8).ravel()
+                    sourceData.Distance_8 = np.array([int(distance_8[i:i + 3]) for i in range(0, len(distance_8), 3)])
+                    sourceData.Temperature = float(temperature)
+                    sourceData.Moisture = int(moisture)
+                    sourceData.Illuminance = int(illuminance)
+                    print(f"소스 데이터 : {sourceData}\n")
+                    queue_list.put(sourceData)
+                elif result.commend == self.codeData.changeCmd:
+                    queue_list.put(True)
+                    print(f"신호 변경 완료 : {result.data}\n")
+                    continue
+                elif result.commend == self.codeData.keepCmd:
                     continue
         except Exception as e:
             print(f"클라이언트 연결 오류: {e}")
@@ -124,6 +145,7 @@ class Stream:
             print(f"클라이언트 연결 종료: {addr}")
 
     def send_sensor(self, cmd, data):
+        self.send_time = time.time()
         for i in self.info_Sensor_List:
             message = self.parser.data_encoding(i.clientID, self.serverID, cmd, data)
             i.socket.sendall(message)

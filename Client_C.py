@@ -3,13 +3,15 @@
 
 import socket
 import time
-import ClientParser
+import ClientParser2
+import random
+from DataClass import CodeData
 
-HOST = '172.30.115.35' ## server에 출력되는 ip를 입력해주세요 ##
+HOST = socket.gethostbyname(socket.gethostname())
 PORT = 9999
 serverID = "S0001001"
 clientID = "D000C001"
-parser = ClientParser.Parser()
+parser = ClientParser2.Parser()
 
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,18 +27,35 @@ def client_start():
 
             result = parser.data_decoding(response)
             print(f"센서 커맨드 확인 : {result.commend}")
-            if result.commend == 1:
+            if result.commend == CodeData.dataCmd:
                 for i in range(1, 6):
-                    message = parser.data_encoding(serverID, clientID, 1, "no"+str(i)+"cData")
+                    ir_data = [random.randint(0, 400) for _ in range(64)]
+                    distance_data = [random.randint(0, 400) for _ in range(64)]
+                    temp_data = round(random.uniform(-20, 40), 2)
+                    mois_data = random.randint(1, 99)
+                    ill_data = random.randint(1, 999)
+
+                    ir_data_str = ''.join(f'{num:03d}' for num in ir_data)
+                    distance_data_str = ''.join(f'{num:03d}' for num in distance_data)
+                    result = f"{i:02d},{ir_data_str},{distance_data_str},{temp_data},{mois_data},{ill_data}"
+
+                    message = parser.data_encoding(serverID, clientID, CodeData.dataCmd, result)
                     # 명령을 받으면 데이터 송신
                     client_socket.sendall(message)
                     print(f"클라이언트가 서버에게 데이터 송신: {message}")
-                    time.sleep(3)
-            elif result.commend == 2:
-                message = parser.data_encoding(serverID, clientID, 2, "OK")
-                client_socket.sendall(message)
-            elif result.commend == 9:
-                message = parser.data_encoding(serverID, clientID, 9, "OK")
+                    time.sleep(0.1)
+            elif result.commend == CodeData.changeCmd:
+                if result.data == "00":
+                    message = parser.data_encoding(serverID, clientID, CodeData.changeCmd, "green_change_OK")
+                    client_socket.sendall(message)
+                elif result.data == "01":
+                    message = parser.data_encoding(serverID, clientID, CodeData.changeCmd, "red_change_OK")
+                    client_socket.sendall(message)
+                else:
+                    message = parser.data_encoding(serverID, clientID, CodeData.changeCmd, "change_OK")
+                    client_socket.sendall(message)
+            elif result.commend == CodeData.keepCmd:
+                message = parser.data_encoding(serverID, clientID, CodeData.keepCmd, "OK")
                 # 명령을 받으면 데이터 송신
                 client_socket.sendall(message)
     except KeyboardInterrupt:

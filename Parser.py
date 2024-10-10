@@ -1,5 +1,5 @@
 import struct
-from DTO import DecodingData
+from DataClass import DecodingData
 
 
 """
@@ -33,9 +33,9 @@ keepalive_cmd = 9 # 2byte
 # clientID => 8s(8byte 문자열)로 패킹
 """
 serverID = S0001001 # 8byte
-clientID = 0x00000002 # 8byte
-clientID = 0x00000003 # 8byte
-clientID = 0x00000004 # 8byte
+client_fID = D000F001 # 8byte
+client_sID = D000S001 # 8byte
+client_cID = D000C001 # 8byte
 """
 
 # status_signal => B로 패킹
